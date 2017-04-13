@@ -9,6 +9,7 @@ var mainState = {
     game.load.image('player', this.assetImageLoad('player.png'));
     game.load.image('wallV', this.assetImageLoad('wallVertical.png'));
     game.load.image('wallH', this.assetImageLoad('wallHorizontal.png'));
+    game.load.image('coin', this.assetImageLoad('coin.png'));
   },
 
   create: function() {
@@ -27,6 +28,22 @@ var mainState = {
     this.player.body.gravity.y = 500;
 
     this.createWorld();
+
+    // Display the coin
+    this.coin = game.add.sprite(60, 140, 'coin');
+
+    // Add Arcade physics to the coin
+    game.physics.arcade.enable(this.coin);
+
+    // Set the anchor point to its center
+    this.coin.anchor.setTo(0.5, 0.5);
+
+    // Display the score
+    this.scoreLabel = game.add.text(30, 30, 'score: 0',
+      { font: '18px Arial', fill: '#ffffff' });
+
+    // Initialize the score variable
+    this.score = 0;
   },
 
   update: function() {
@@ -35,6 +52,8 @@ var mainState = {
     if (!this.player.inWorld) {
       this.playerDie();
     }
+
+    game.physics.arcade.overlap(this.player, this.coin, this.takeCoin, null, this);
 
     this.movePlayer();
   },
@@ -67,6 +86,37 @@ var mainState = {
 
   playerDie() {
     game.state.start('main');
+  },
+
+  takeCoin() {
+    // Update the score
+    this.score += 5;
+    this.scoreLabel.text = `score: ${this.score}`;
+
+    // Change the coin position
+    this.updateCoin();
+  },
+
+  updateCoin() {
+    // Store all the possible coin positions in an array
+    var coinPosition = [
+      {x: 140, y: 60}, {x: 360, y: 60}, // Top row
+      {x: 60, y: 140}, {x: 440, y: 140}, // Middle row {x: 130, y: 300}, {x: 370, y: 300} // Bottom row
+    ];
+
+    // Remove the current coin position from the array
+    // Otherwise the coin could appear at the same spot twice in a row
+    for (let i = 0; i < coinPosition.length; i++) {
+      if (coinPosition[i].x == this.coin.x) {
+        coinPosition.splice(i, 1);
+      }
+    }
+
+    // Randomly select a position from the array with 'game.rnd.pick'
+    let newPosition = game.rnd.pick(coinPosition);
+
+    // Set the new position of the coin
+    this.coin.reset(newPosition.x, newPosition.y);
   },
 
   movePlayer() {
