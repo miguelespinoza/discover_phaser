@@ -10,6 +10,7 @@ var mainState = {
     game.load.image('wallV', this.assetImageLoad('wallVertical.png'));
     game.load.image('wallH', this.assetImageLoad('wallHorizontal.png'));
     game.load.image('coin', this.assetImageLoad('coin.png'));
+    game.load.image('enemy', this.assetImageLoad('enemy.png'));
   },
 
   create: function() {
@@ -28,32 +29,20 @@ var mainState = {
     this.player.body.gravity.y = 500;
 
     this.createWorld();
-
-    // Display the coin
-    this.coin = game.add.sprite(60, 140, 'coin');
-
-    // Add Arcade physics to the coin
-    game.physics.arcade.enable(this.coin);
-
-    // Set the anchor point to its center
-    this.coin.anchor.setTo(0.5, 0.5);
-
-    // Display the score
-    this.scoreLabel = game.add.text(30, 30, 'score: 0',
-      { font: '18px Arial', fill: '#ffffff' });
-
-    // Initialize the score variable
-    this.score = 0;
+    this.createPointSystem();
+    this.createEnemies();
   },
 
   update: function() {
     game.physics.arcade.collide(this.player, this.walls);
+    game.physics.arcade.collide(this.enemies, this.walls);
 
     if (!this.player.inWorld) {
       this.playerDie();
     }
 
     game.physics.arcade.overlap(this.player, this.coin, this.takeCoin, null, this);
+    game.physics.arcade.overlap(this.player, this.enemies, this.playerDie, null, this);
 
     this.movePlayer();
   },
@@ -82,6 +71,69 @@ var mainState = {
 
     // Set all the walls to be immovable
     this.walls.setAll('body.immovable', true);
+  },
+
+  createPointSystem() {
+    // Display the coin
+    this.coin = game.add.sprite(60, 140, 'coin');
+
+    // Add Arcade physics to the coin
+    game.physics.arcade.enable(this.coin);
+
+    // Set the anchor point to its center
+    this.coin.anchor.setTo(0.5, 0.5);
+
+    // Display the score
+    this.scoreLabel = game.add.text(30, 30, 'score: 0',
+      { font: '18px Arial', fill: '#ffffff' });
+
+    // Initialize the score variable
+    this.score = 0;
+  },
+
+  createEnemies() {
+    // Create an enemy group with Arcade physics
+    this.enemies = game.add.group();
+    this.enemies.enableBody = true;
+
+    // Create 10 enemies in the group with the 'enemy' image
+    // Enemies are "dead" by default so they hare not visible in the game
+    this.enemies.createMultiple(10, 'enemy');
+
+    // Call 'addEnemy' every 2.2 seconds
+    game.time.events.loop(2200, this.addEnemy, this);
+  },
+
+  addEnemy() {
+    // Get the first dead enemy of the group
+    var enemy = this.enemies.getFirstDead();
+
+    // If there isn't any dead enemy, do nothing
+    if (!enemy) {
+      return;
+    }
+
+    // Initialize the enemy
+
+    // Set the anchor point centered at the bottom
+    enemy.anchor.setTo(0.5, 1);
+
+    // Put the enemy above the top hole
+    enemy.reset(game.width/2, 0);
+
+    // Add gravity to see it fall
+    enemy.body.gravity.y = 500;
+
+    // makes the enemy move left or right
+    enemy.body.velocity.x = 100 * game.rnd.pick([-1, 1]);
+
+    // on hitWall, move opposite direction
+    enemy.body.bounce.x = 1;
+
+
+    // when falling into bottom hole kill the sprite
+    enemy.checkWorldBounds = true;
+    enemy.outOfBoundsKill = true;
   },
 
   playerDie() {
